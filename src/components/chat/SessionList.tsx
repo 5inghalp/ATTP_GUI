@@ -106,7 +106,7 @@ function SessionItem({
         animationFillMode: 'forwards',
       }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 overflow-hidden">
         {/* Session indicator */}
         <div className={`
           w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5
@@ -120,8 +120,11 @@ function SessionItem({
           </svg>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>
+        <div style={{ width: '160px' }}>
+          <p
+            className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground'}`}
+            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
             {session.title}
           </p>
           <div className="flex items-center gap-2 mt-1">

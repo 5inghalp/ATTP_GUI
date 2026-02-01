@@ -6,8 +6,12 @@ const STORAGE_KEYS = {
   INSIGHTS: 'restore_health_insights',
 } as const;
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
 // Generic storage helpers
 function getItem<T>(key: string, defaultValue: T): T {
+  if (!isBrowser) return defaultValue;
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
@@ -18,6 +22,7 @@ function getItem<T>(key: string, defaultValue: T): T {
 }
 
 function setItem<T>(key: string, value: T): void {
+  if (!isBrowser) return;
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
@@ -35,6 +40,7 @@ export function saveProfile(profile: PatientProfile): void {
 }
 
 export function clearProfile(): void {
+  if (!isBrowser) return;
   localStorage.removeItem(STORAGE_KEYS.PROFILE);
 }
 
@@ -92,6 +98,7 @@ export function deleteInsightsBySession(sessionId: string): void {
 
 // Clear all data
 export function clearAllData(): void {
+  if (!isBrowser) return;
   localStorage.removeItem(STORAGE_KEYS.PROFILE);
   localStorage.removeItem(STORAGE_KEYS.SESSIONS);
   localStorage.removeItem(STORAGE_KEYS.INSIGHTS);

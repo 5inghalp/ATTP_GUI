@@ -8,7 +8,7 @@ interface ReasoningPanelProps {
 
 export function ReasoningPanel({ steps, streamingText }: ReasoningPanelProps) {
   return (
-    <div className="flex flex-col h-full bg-gradient-reasoning rounded-2xl border border-border/50 overflow-hidden">
+    <div className="flex flex-col h-full bg-gradient-reasoning rounded-2xl border border-border/50">
       {/* Header */}
       <div className="p-4 border-b border-border/30">
         <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ function StreamingCard({ text }: { text: string }) {
             <p className="text-[10px] uppercase tracking-wider text-primary/70 font-medium mb-1">
               Thinking...
             </p>
-            <p className="text-sm text-muted-foreground italic leading-relaxed">
+            <p className="text-sm text-muted-foreground italic leading-relaxed break-words">
               {text}
             </p>
           </div>
@@ -162,7 +162,7 @@ function ReasoningStepCard({ step, index }: { step: ReasoningStep; index: number
           <p className={`text-[10px] uppercase tracking-wider font-medium mb-1.5 ${config.labelColor}`}>
             {config.label}
           </p>
-          <p className="text-sm text-foreground/90 leading-relaxed editorial-note pl-0 before:hidden">
+          <p className="text-sm text-foreground/90 leading-relaxed editorial-note pl-0 before:hidden break-words">
             {step.content}
           </p>
           <p className="text-[9px] text-muted-foreground/60 mt-2">

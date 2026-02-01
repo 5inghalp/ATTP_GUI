@@ -3,7 +3,7 @@ import {
   isClientInitialized,
   streamMessage,
 } from './claudeProvider';
-import { buildAIContext, getRelevantInsights } from './contextBuilder';
+import { getRelevantInsights } from './contextBuilder';
 import {
   parseAIResponse,
   getDisplayContent,
@@ -48,61 +48,56 @@ export async function sendHealthMessage(
   allInsights: HealthInsight[],
   callbacks: AIResponseCallbacks
 ): Promise<void> {
-  if (!isClientInitialized()) {
-    callbacks.onError(new Error('Please enter your Anthropic API key to start chatting.'));
-    return;
-  }
-
   // Get insights from other sessions (not current)
   const relevantInsights = getRelevantInsights(allInsights, session.id);
-
-  // Build context
-  const context = buildAIContext(session, profile, relevantInsights);
 
   let fullResponse = '';
   let currentStreamText = '';
 
-  await streamMessage(context.systemPrompt, context.messages, {
-    onText: (text) => {
-      fullResponse += text;
-      currentStreamText += text;
+  await streamMessage(
+    { session, profile, insights: relevantInsights },
+    {
+      onText: (text) => {
+        fullResponse += text;
+        currentStreamText += text;
 
-      // Send streaming text for display
-      callbacks.onStreamingText(text);
+        // Send streaming text for display
+        callbacks.onStreamingText(text);
 
-      // Check for reasoning section as it streams
-      const reasoningMatch = currentStreamText.match(/<reasoning>([\s\S]*?)(?:<\/reasoning>|$)/);
-      if (reasoningMatch && reasoningMatch[1]) {
-        callbacks.onReasoningUpdate(reasoningMatch[1].trim());
-      }
-    },
-    onComplete: (completeText) => {
-      // Parse the complete response
-      const parsed = parseAIResponse(completeText);
-      const displayContent = getDisplayContent(parsed);
-      const reasoningStep = buildReasoningStep(parsed);
+        // Check for reasoning section as it streams
+        const reasoningMatch = currentStreamText.match(/<reasoning>([\s\S]*?)(?:<\/reasoning>|$)/);
+        if (reasoningMatch && reasoningMatch[1]) {
+          callbacks.onReasoningUpdate(reasoningMatch[1].trim());
+        }
+      },
+      onComplete: (completeText) => {
+        // Parse the complete response
+        const parsed = parseAIResponse(completeText);
+        const displayContent = getDisplayContent(parsed);
+        const reasoningStep = buildReasoningStep(parsed);
 
-      const result: AIResponseResult = {
-        displayContent,
-        reasoning: reasoningStep
-          ? {
-              id: generateId(),
-              type: reasoningStep.type,
-              content: reasoningStep.content,
-              timestamp: new Date().toISOString(),
-            }
-          : null,
-        actionItems: parsed.actionItems || [],
-        insights: parsed.insights || [],
-        isSummary: parsed.isSummary,
-        isRedFlag: parsed.isRedFlag,
-        rawResponse: completeText,
-      };
+        const result: AIResponseResult = {
+          displayContent,
+          reasoning: reasoningStep
+            ? {
+                id: generateId(),
+                type: reasoningStep.type,
+                content: reasoningStep.content,
+                timestamp: new Date().toISOString(),
+              }
+            : null,
+          actionItems: parsed.actionItems || [],
+          insights: parsed.insights || [],
+          isSummary: parsed.isSummary,
+          isRedFlag: parsed.isRedFlag,
+          rawResponse: completeText,
+        };
 
-      callbacks.onComplete(result);
-    },
-    onError: callbacks.onError,
-  });
+        callbacks.onComplete(result);
+      },
+      onError: callbacks.onError,
+    }
+  );
 }
 
 /**

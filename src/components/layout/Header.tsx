@@ -8,7 +8,7 @@ interface HeaderProps {
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
   return (
-    <header className="h-16 border-b border-border/50 bg-gradient-to-r from-background via-secondary/20 to-background px-6 flex items-center justify-between relative overflow-hidden">
+    <header className="h-16 border-b border-border/50 bg-gradient-to-r from-background via-secondary/20 to-background px-6 flex items-center justify-between relative">
       {/* Subtle decorative element */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.02] via-transparent to-accent/[0.02]" />
 

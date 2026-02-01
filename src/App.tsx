@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { SessionList } from '@/components/chat/SessionList';
@@ -6,7 +8,6 @@ import { ReasoningPanel } from '@/components/reasoning/ReasoningPanel';
 import { ActionPanel } from '@/components/actions/ActionPanel';
 import { ProfileTab } from '@/components/profile/ProfileTab';
 import { TrendsTab } from '@/components/trends/TrendsTab';
-import { ApiKeyInput } from '@/components/chat/ApiKeyInput';
 import { useApp } from '@/context/AppContext';
 import { sendHealthMessage } from '@/services/ai/aiService';
 import type { ReasoningStep, ChatSession, Message } from '@/types';
@@ -20,7 +21,6 @@ function App() {
     activeSession,
     isLoading,
     streamingReasoning,
-    isApiKeySet,
     updateProfile,
     createSession,
     selectSession,
@@ -31,7 +31,6 @@ function App() {
     updateSessionFields,
     setIsLoading,
     setStreamingReasoning,
-    setIsApiKeySet,
   } = useApp();
 
   const [streamingContent, setStreamingContent] = useState('');
@@ -239,16 +238,11 @@ function App() {
         />
       }
       chatArea={
-        <div className="flex flex-col h-full flex-1">
-          {!isApiKeySet && (
-            <ApiKeyInput onKeySet={() => setIsApiKeySet(true)} />
-          )}
-          <ChatArea
-            messages={messagesWithStreaming}
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-          />
-        </div>
+        <ChatArea
+          messages={messagesWithStreaming}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+        />
       }
       reasoningPanel={
         <ReasoningPanel steps={currentReasoningSteps} streamingText={streamingReasoning} />

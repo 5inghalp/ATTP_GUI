@@ -12,7 +12,7 @@ export function ActionPanel({ items, onToggleComplete }: ActionPanelProps) {
   const urgentCount = items.filter(i => i.urgency === 'urgent' && !i.completed).length;
 
   return (
-    <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50 overflow-hidden">
+    <div className="flex flex-col h-full bg-card/50 rounded-2xl border border-border/50">
       {/* Header */}
       <div className="p-4 border-b border-border/30">
         <div className="flex items-center justify-between">
@@ -146,7 +146,7 @@ function ActionItemCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2">
-              <p className={`text-sm leading-snug flex-1 ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+              <p className={`text-sm leading-snug flex-1 break-words ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                 {item.task}
               </p>
               {item.urgency === 'urgent' && !item.completed && (
@@ -186,7 +186,7 @@ function ActionItemCard({
       {expanded && (
         <div className="px-3 pb-3 pt-0 animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
           <div className="ml-8 p-2.5 rounded-lg bg-secondary/30 border-l-2 border-primary/30">
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed break-words">
               {item.why}
             </p>
           </div>

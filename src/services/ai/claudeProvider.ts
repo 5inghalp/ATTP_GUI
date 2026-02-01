@@ -1,20 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
-import type { Message } from '@/types';
+import type { Message, ChatSession, PatientProfile, HealthInsight } from '@/types';
 
-// Note: For production, API calls should go through a backend proxy
-// This client-side implementation is for MVP/demo purposes only
+// Client is now always "initialized" since API calls go through the server
+// We keep this for backwards compatibility with the UI
+let isServerConfigured = true;
 
-let client: Anthropic | null = null;
-
-export function initializeClient(apiKey: string): void {
-  client = new Anthropic({
-    apiKey,
-    dangerouslyAllowBrowser: true, // Required for client-side usage - move to backend for production
-  });
+export function initializeClient(_apiKey: string): void {
+  // API key is now stored server-side via environment variable
+  // This function is kept for backwards compatibility but is a no-op
+  isServerConfigured = true;
 }
 
 export function isClientInitialized(): boolean {
-  return client !== null;
+  return isServerConfigured;
 }
 
 export interface StreamCallbacks {
@@ -23,37 +20,69 @@ export interface StreamCallbacks {
   onError: (error: Error) => void;
 }
 
+export interface ChatRequest {
+  session: ChatSession;
+  profile: PatientProfile | null;
+  insights: HealthInsight[];
+}
+
 export async function streamMessage(
-  systemPrompt: string,
-  messages: Message[],
+  request: ChatRequest,
   callbacks: StreamCallbacks
 ): Promise<void> {
-  if (!client) {
-    callbacks.onError(new Error('Claude client not initialized. Please enter your API key.'));
-    return;
-  }
-
-  // Convert our message format to Anthropic's format
-  const anthropicMessages = messages.map((msg) => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-  }));
-
   try {
     let fullText = '';
 
-    const stream = await client.messages.stream({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: anthropicMessages,
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
     });
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        const text = event.delta.text;
-        fullText += text;
-        callbacks.onText(text);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to send message');
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.error) {
+              callbacks.onError(new Error(data.error));
+              return;
+            }
+
+            if (data.done) {
+              callbacks.onComplete(fullText);
+              return;
+            }
+
+            if (data.text) {
+              fullText += data.text;
+              callbacks.onText(data.text);
+            }
+          } catch {
+            // Skip invalid JSON lines
+          }
+        }
       }
     }
 
@@ -63,28 +92,10 @@ export async function streamMessage(
   }
 }
 
+// Legacy function kept for backwards compatibility
 export async function sendMessage(
-  systemPrompt: string,
-  messages: Message[]
+  _systemPrompt: string,
+  _messages: Message[]
 ): Promise<string> {
-  if (!client) {
-    throw new Error('Claude client not initialized. Please enter your API key.');
-  }
-
-  // Convert our message format to Anthropic's format
-  const anthropicMessages = messages.map((msg) => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-  }));
-
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    system: systemPrompt,
-    messages: anthropicMessages,
-  });
-
-  // Extract text from response
-  const textContent = response.content.find((block) => block.type === 'text');
-  return textContent?.type === 'text' ? textContent.text : '';
+  throw new Error('Direct message sending is no longer supported. Use streamMessage with the API route.');
 }

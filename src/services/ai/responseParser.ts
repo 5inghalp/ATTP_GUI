@@ -4,11 +4,6 @@ import type { ParsedAIResponse, HealthCategory } from '@/types';
  * Parses the AI response that uses XML-like markers into structured components.
  */
 export function parseAIResponse(rawResponse: string): ParsedAIResponse {
-  // Debug logging - remove in production
-  console.log('=== AI Response Parser Debug ===');
-  console.log('Raw response length:', rawResponse.length);
-  console.log('Raw response preview:', rawResponse.substring(0, 500) + '...');
-
   const result: ParsedAIResponse = {
     answer: '',
     isSummary: false,
@@ -19,7 +14,6 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
   const answerMatch = rawResponse.match(/<answer>([\s\S]*?)<\/answer>/);
   if (answerMatch) {
     result.answer = answerMatch[1].trim();
-    console.log('Found <answer> tag');
   } else {
     // If no markers found, treat entire response as the answer
     // But strip out any XML tags that might be there
@@ -31,21 +25,18 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
       .replace(/<insights>[\s\S]*?<\/insights>/g, '')
       .trim();
     result.answer = cleanedResponse || rawResponse.trim();
-    console.log('No <answer> tag found, using cleaned response');
   }
 
   // Extract <reasoning> section (for "Why I'm asking")
   const reasoningMatch = rawResponse.match(/<reasoning>([\s\S]*?)<\/reasoning>/);
   if (reasoningMatch) {
     result.reasoning = reasoningMatch[1].trim();
-    console.log('Found <reasoning> tag:', result.reasoning.substring(0, 100) + '...');
   }
 
   // Extract <followup> section
   const followupMatch = rawResponse.match(/<followup>([\s\S]*?)<\/followup>/);
   if (followupMatch) {
     result.followUpQuestion = followupMatch[1].trim();
-    console.log('Found <followup> tag');
   }
 
   // Extract <summary> section
@@ -54,13 +45,11 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
     result.isSummary = true;
     // Append summary to answer for display
     result.answer += '\n\n' + summaryMatch[1].trim();
-    console.log('Found <summary> tag - this is a summary response');
   }
 
   // Extract <actionitems> section (JSON array)
   const actionItemsMatch = rawResponse.match(/<actionitems>([\s\S]*?)<\/actionitems>/);
   if (actionItemsMatch) {
-    console.log('Found <actionitems> tag, content:', actionItemsMatch[1]);
     try {
       const rawJson = actionItemsMatch[1].trim();
       const items = JSON.parse(rawJson);
@@ -70,25 +59,19 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
           why: item.why || 'No explanation provided',
           urgency: (item.urgency === 'urgent' ? 'urgent' : 'routine') as 'routine' | 'urgent',
         }));
-        console.log('Parsed action items:', result.actionItems.length);
       }
-    } catch (e) {
-      console.warn('Failed to parse action items JSON:', actionItemsMatch[1], e);
+    } catch {
       // Try to extract action items from non-JSON format
       const fallbackItems = parseActionItemsFallback(actionItemsMatch[1]);
       if (fallbackItems.length > 0) {
         result.actionItems = fallbackItems;
-        console.log('Used fallback parsing for action items:', fallbackItems.length);
       }
     }
-  } else {
-    console.log('No <actionitems> tag found');
   }
 
   // Extract <insights> section (JSON array)
   const insightsMatch = rawResponse.match(/<insights>([\s\S]*?)<\/insights>/);
   if (insightsMatch) {
-    console.log('Found <insights> tag, content:', insightsMatch[1]);
     try {
       const items = JSON.parse(insightsMatch[1].trim());
       if (Array.isArray(items)) {
@@ -101,10 +84,9 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
             category: item.category as HealthCategory,
             content: item.content,
           }));
-        console.log('Parsed insights:', result.insights.length);
       }
-    } catch (e) {
-      console.warn('Failed to parse insights JSON:', insightsMatch[1], e);
+    } catch {
+      // Silently ignore parse errors for insights
     }
   }
 
@@ -120,15 +102,6 @@ export function parseAIResponse(rawResponse: string): ParsedAIResponse {
   result.isRedFlag = redFlagKeywords.some((keyword) =>
     rawResponse.toLowerCase().includes(keyword.toLowerCase())
   );
-
-  console.log('=== Parser Result ===');
-  console.log('Has answer:', !!result.answer);
-  console.log('Has reasoning:', !!result.reasoning);
-  console.log('Has followup:', !!result.followUpQuestion);
-  console.log('Is summary:', result.isSummary);
-  console.log('Action items count:', result.actionItems?.length || 0);
-  console.log('Insights count:', result.insights?.length || 0);
-  console.log('Is red flag:', result.isRedFlag);
 
   return result;
 }

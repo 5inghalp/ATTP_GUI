@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import type { Message } from '@/types';
@@ -13,21 +12,14 @@ interface ChatAreaProps {
 export function ChatArea({ messages, onSendMessage, isLoading }: ChatAreaProps) {
   const [input, setInput] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    // Method 1: Use scrollIntoView on a marker element at the end
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Method 2: Also try to scroll the viewport directly
     if (scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
-      }
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, [messages]);
 
@@ -54,7 +46,7 @@ export function ChatArea({ messages, onSendMessage, isLoading }: ChatAreaProps) 
 
   return (
     <div className="flex flex-col h-full bg-gradient-wellness">
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
         <div className="px-6 py-4">
           <div className="space-y-6 max-w-2xl mx-auto">
             {messages.length === 0 ? (
@@ -71,11 +63,9 @@ export function ChatArea({ messages, onSendMessage, isLoading }: ChatAreaProps) 
             {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
               <ThinkingIndicator />
             )}
-            {/* Invisible element to scroll to */}
-            <div ref={messagesEndRef} />
           </div>
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="p-4 border-t border-border/50 bg-card/80 backdrop-blur-sm">
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
