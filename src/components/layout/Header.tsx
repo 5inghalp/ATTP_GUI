@@ -1,4 +1,7 @@
+'use client';
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/context/AuthContext';
 import type { AppTab } from '@/types';
 
 interface HeaderProps {
@@ -7,6 +10,8 @@ interface HeaderProps {
 }
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="h-16 border-b border-border/50 bg-gradient-to-r from-background via-secondary/20 to-background px-6 flex items-center justify-between relative">
       {/* Subtle decorative element */}
@@ -79,9 +84,37 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
         </TabsList>
       </Tabs>
 
-      {/* Right side decorative element */}
-      <div className="w-32 relative z-10 flex justify-end">
-        <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse" />
+      {/* User menu */}
+      <div className="relative z-10 flex items-center gap-3">
+        {user && (
+          <>
+            <span className="text-sm text-muted-foreground hidden sm:block">
+              {user.email}
+            </span>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+            >
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </>
+        )}
+        {!user && (
+          <div className="w-2 h-2 rounded-full bg-primary/60 animate-pulse" />
+        )}
       </div>
     </header>
   );

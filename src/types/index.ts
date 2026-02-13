@@ -1,3 +1,9 @@
+// User (from Supabase Auth)
+export interface User {
+  id: string;
+  email: string;
+}
+
 // Patient Profile
 export interface PatientProfile {
   id: string;

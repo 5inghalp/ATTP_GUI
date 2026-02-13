@@ -1,9 +1,40 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import { buildAIContext, getRelevantInsights } from '@/services/ai/contextBuilder';
 import type { ChatSession, PatientProfile, HealthInsight } from '@/types';
 
 export async function POST(request: Request) {
   try {
+    // Validate authentication
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: object) {
+            cookieStore.set(name, value, options);
+          },
+          remove(name: string, options: object) {
+            cookieStore.delete(name);
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { session, profile, insights } = await request.json() as {
       session: ChatSession;
       profile: PatientProfile | null;

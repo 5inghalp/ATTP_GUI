@@ -8,11 +8,14 @@ import { ReasoningPanel } from '@/components/reasoning/ReasoningPanel';
 import { ActionPanel } from '@/components/actions/ActionPanel';
 import { ProfileTab } from '@/components/profile/ProfileTab';
 import { TrendsTab } from '@/components/trends/TrendsTab';
+import { MigrationPrompt } from '@/components/MigrationPrompt';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { sendHealthMessage } from '@/services/ai/aiService';
 import type { ReasoningStep, ChatSession, Message } from '@/types';
 
 function App() {
+  const { isLoading: isAuthLoading } = useAuth();
   const {
     profile,
     sessions,
@@ -21,6 +24,7 @@ function App() {
     activeSession,
     isLoading,
     streamingReasoning,
+    isDataLoading,
     updateProfile,
     createSession,
     selectSession,
@@ -32,6 +36,30 @@ function App() {
     setIsLoading,
     setStreamingReasoning,
   } = useApp();
+
+  // Show loading state while auth or data is loading
+  if (isAuthLoading || isDataLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/20 to-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm animate-pulse">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className="w-6 h-6 text-primary-foreground"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+            </svg>
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const [streamingContent, setStreamingContent] = useState('');
 
@@ -228,34 +256,37 @@ function App() {
     : displayMessages;
 
   return (
-    <AppShell
-      sessionList={
-        <SessionList
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          onSelectSession={selectSession}
-          onNewSession={() => createSession()}
-        />
-      }
-      chatArea={
-        <ChatArea
-          messages={messagesWithStreaming}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-        />
-      }
-      reasoningPanel={
-        <ReasoningPanel steps={currentReasoningSteps} streamingText={streamingReasoning} />
-      }
-      actionPanel={
-        <ActionPanel
-          items={activeSession?.actionItems || []}
-          onToggleComplete={handleToggleActionComplete}
-        />
-      }
-      profileTab={<ProfileTab profile={profile} onUpdateProfile={updateProfile} />}
-      trendsTab={<TrendsTab insights={insights} />}
-    />
+    <>
+      <MigrationPrompt />
+      <AppShell
+        sessionList={
+          <SessionList
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onSelectSession={selectSession}
+            onNewSession={() => createSession()}
+          />
+        }
+        chatArea={
+          <ChatArea
+            messages={messagesWithStreaming}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+          />
+        }
+        reasoningPanel={
+          <ReasoningPanel steps={currentReasoningSteps} streamingText={streamingReasoning} />
+        }
+        actionPanel={
+          <ActionPanel
+            items={activeSession?.actionItems || []}
+            onToggleComplete={handleToggleActionComplete}
+          />
+        }
+        profileTab={<ProfileTab profile={profile} onUpdateProfile={updateProfile} />}
+        trendsTab={<TrendsTab insights={insights} />}
+      />
+    </>
   );
 }
 
